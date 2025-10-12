@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "random": "c",
+        "omp.h": "c",
+        "chrono": "c",
+        "span": "c"
+    }
+}
