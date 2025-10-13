@@ -117,7 +117,12 @@ int main( int argc, char *argv[] ) {
 	        residual = solve(param.u, param.uhelp, np, np);
 		    // // Copy uhelp into u
             // copy_mat(param.uhelp, param.u, np, np);
-		    
+		    // pointer swap
+            {
+                double *tmp = param.u;
+                param.u = param.uhelp;
+                param.uhelp = tmp;
+            }
 		    break;
 	    case 1: // GAUSS-SEIDEL
             residual = solve(param.u, param.u, np, np);
