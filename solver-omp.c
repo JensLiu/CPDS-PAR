@@ -61,6 +61,22 @@ double solve (double *u, double *unew, unsigned sizex, unsigned sizey) {
       }
     }
 
+    #pragma omp parallel
+    {
+      int blocki = omp_get_thread_num();
+      int i_start = lowerb(blocki, nblocksi, sizex);
+      int i_end = upperb(blocki, nblocksi, sizex);
+      for (int blockj=0; blockj<nblocksj; ++blockj) {
+        int j_start = lowerb(blockj, nblocksj, sizey);
+        int j_end = upperb(blockj, nblocksj, sizey);
+        for (int i=max(1, i_start); i<=min(sizex-2, i_end); i++) {
+          for (int j=max(1, j_start); j<=min(sizey-2, j_end); j++) {
+	          u[i*sizey+j] = unew[i*sizey+j];
+          }
+        }
+      }
+    }
+
     return sum;
 }
 

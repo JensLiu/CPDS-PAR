@@ -115,8 +115,9 @@ int main( int argc, char *argv[] ) {
 	switch( param.algorithm ) {
 	    case 0: // JACOBI
 	        residual = solve(param.u, param.uhelp, np, np);
-		    // Copy uhelp into u
-		    copy_mat(param.uhelp, param.u, np, np);
+		    // // Copy uhelp into u
+            // copy_mat(param.uhelp, param.u, np, np);
+		    
 		    break;
 	    case 1: // GAUSS-SEIDEL
             residual = solve(param.u, param.u, np, np);
