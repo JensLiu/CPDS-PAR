@@ -89,7 +89,7 @@ double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
   int nblocksi = omp_get_max_threads();
   int nblocksj = 1;
 
-  #pragma taskgroup
+  // #pragma omp taskgroup
   // #pragma omp parallel
   // #pragma omp single
   {
@@ -99,6 +99,7 @@ double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
       for (int blockj = 0; blockj < nblocksj; ++blockj) {
         int j_start = lowerb(blockj, nblocksj, sizey);
         int j_end = upperb(blockj, nblocksj, sizey);
+
         #pragma omp task \
                     depend(in : u[(blocki - 1) * nblocksj + blockj], u[blocki * nblocksj + (blockj - 1)]) \
                     depend(out : u[blocki * nblocksj + blockj]) \
@@ -107,21 +108,13 @@ double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
         {
           for (int i = max(1, i_start); i <= min(sizex - 2, i_end); i++) {
             for (int j = max(1, j_start); j <= min(sizey - 2, j_end); j++) {
-
-              // #pragma omp task \
-              //       depend(in : u[(i - 1) * sizey + j], u[i * sizey + (j - 1)]) \
-              //       depend(out : u[i * sizey + j]) \
-              //       private(tmp, diff)  \
-              //       in_reduction(+ : sum)
-              {
-                tmp = 0.25 * (u[i * sizey + (j - 1)] + // left
-                            u[i * sizey + (j + 1)] + // right
-                            u[(i - 1) * sizey + j] + // top
-                            u[(i + 1) * sizey + j]); // bottom
-                diff = tmp - u[i * sizey + j];
-                sum += diff * diff;
-                u[i * sizey + j] = tmp;
-              }
+              tmp = 0.25 * (u[i * sizey + (j - 1)] + // left
+                          u[i * sizey + (j + 1)] + // right
+                          u[(i - 1) * sizey + j] + // top
+                          u[(i + 1) * sizey + j]); // bottom
+              diff = tmp - u[i * sizey + j];
+              sum += diff * diff;
+              u[i * sizey + j] = tmp;
             }
           }
         }

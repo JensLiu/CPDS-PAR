@@ -1,6 +1,6 @@
 # C compiler
-CC     =  icx
-# CC		= gcc
+# CC     =  icx
+CC		= clang
 OPT3 	= -g -O3
 OPTG0 	= -g -O0
 
@@ -52,12 +52,22 @@ gen-heat-omp: heat-omp
 	./heat-omp test.dat -a 1 -o heat-gauss-omp.ppm
 
 original-ppms: heat-seq
-# 	./heat-seq test.dat -a 0 -o heat-jacobi-seq.ppm && \
+	./heat-seq test.dat -a 0 -o heat-jacobi-seq.ppm && \
 	./heat-seq test.dat -a 1 -o heat-gauss-seq.ppm
 	
-cfg-heat-omp: heat-omp.c solver-omp.c misc.c
+cfg-gcc: heat-omp.c solver-omp.c misc.c
 	cd cfgs && \
-	rm * && \
+	rm -fr * && \
 	gcc $(CFLAGS) $(OPT3) $(OPENMP) ../heat-omp.c ../solver-omp.c ../misc.c $(LFLAGS) -fdump-tree-optimized-graph && \
-	dot -Tpng a-heat-omp.c.254t.optimized.dot -o heat-cfg.png && \
-	dot -Tpng a-solver-omp.c.254t.optimized.dot -o solver-cfg.png
+	dot -Tpdf a-heat-omp.c.254t.optimized.dot -o heat-cfg.pdf && \
+	dot -Tpdf a-solver-omp.c.254t.optimized.dot -o solver-cfg.pdf
+
+cfg-clang: heat-omp.c solver-omp.c misc.c
+	cd cfgs && \
+	rm -fr * && \
+	clang -S -emit-llvm $(OPENMP) $(CFLAGS) $(OPT3) ../heat-omp.c ../solver-omp.c ../misc.c $(LFLAGS) && \
+	opt -passes=dot-cfg -disable-output solver-omp.ll && \
+	dot -Tpdf .solve_gauss.dot -o solve_gauss.pdf && \
+	dot -Tpdf .solve_gauss.omp_outlined.dot -o solve_gauss_omp.pdf && \
+	dot -Tpdf ..omp_task_entry..dot -o omp_task_entry.pdf && \
+	dot -Tpdf .solve.omp_outlined.dot -o solve_omp_outlined.pdf
