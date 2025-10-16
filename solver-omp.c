@@ -92,32 +92,35 @@ double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
   #pragma omp parallel
   #pragma omp single
   {
-    for (int blocki = 0; blocki < nblocksi; ++blocki) {
-      int i_start = lowerb(blocki, nblocksi, sizex);
-      int i_end = upperb(blocki, nblocksi, sizex);
-      for (int blockj = 0; blockj < nblocksj; ++blockj) {
-        int j_start = lowerb(blockj, nblocksj, sizey);
-        int j_end = upperb(blockj, nblocksj, sizey);
+    #pragma omp taskgroup
+    {
+      for (int blocki = 0; blocki < nblocksi; ++blocki) {
+        int i_start = lowerb(blocki, nblocksi, sizex);
+        int i_end = upperb(blocki, nblocksi, sizex);
+        for (int blockj = 0; blockj < nblocksj; ++blockj) {
+          int j_start = lowerb(blockj, nblocksj, sizey);
+          int j_end = upperb(blockj, nblocksj, sizey);
 
-        #pragma omp task \
-                    depend(in : u[(blocki - 1) * nblocksj + blockj], u[blocki * nblocksj + (blockj - 1)]) \
-                    depend(out : u[blocki * nblocksj + blockj]) \
-                    private(tmp, diff)
-        {
-          double sum_tmp = 0;
-          for (int i = max(1, i_start); i <= min(sizex - 2, i_end); i++) {
-            for (int j = max(1, j_start); j <= min(sizey - 2, j_end); j++) {
-              tmp = 0.25 * (u[i * sizey + (j - 1)] + // left
-                          u[i * sizey + (j + 1)] + // right
-                          u[(i - 1) * sizey + j] + // top
-                          u[(i + 1) * sizey + j]); // bottom
-              diff = tmp - u[i * sizey + j];
-              sum_tmp += diff * diff;
-              u[i * sizey + j] = tmp;
+          #pragma omp task \
+                      depend(in : u[(blocki - 1) * nblocksj + blockj], u[blocki * nblocksj + (blockj - 1)]) \
+                      depend(out : u[blocki * nblocksj + blockj]) \
+                      private(tmp, diff)
+          {
+            double sum_tmp = 0;
+            for (int i = max(1, i_start); i <= min(sizex - 2, i_end); i++) {
+              for (int j = max(1, j_start); j <= min(sizey - 2, j_end); j++) {
+                tmp = 0.25 * (u[i * sizey + (j - 1)] + // left
+                            u[i * sizey + (j + 1)] + // right
+                            u[(i - 1) * sizey + j] + // top
+                            u[(i + 1) * sizey + j]); // bottom
+                diff = tmp - u[i * sizey + j];
+                sum_tmp += diff * diff;
+                u[i * sizey + j] = tmp;
+              }
             }
+            #pragma omp atomic
+            sum += sum_tmp;
           }
-          #pragma omp atomic
-          sum += sum_tmp;
         }
       }
     }
