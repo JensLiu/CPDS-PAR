@@ -63,11 +63,16 @@ cfg-gcc: heat-omp.c solver-omp.c misc.c
 	dot -Tpdf a-solver-omp.c.254t.optimized.dot -o solver-cfg.pdf
 
 cfg-clang: heat-omp.c solver-omp.c misc.c
+	rm -rf cfgs/* && \
 	cd cfgs && \
-	rm -fr * && \
 	clang -S -emit-llvm $(OPENMP) $(CFLAGS) $(OPT3) ../heat-omp.c ../solver-omp.c ../misc.c $(LFLAGS) && \
 	opt -passes=dot-cfg -disable-output solver-omp.ll && \
+	opt -passes=dot-cfg -disable-output heat-omp.ll && \
+	opt -passes=dot-cfg -disable-output misc.ll && \
 	dot -Tpdf .solve_gauss.dot -o solve_gauss.pdf && \
-	dot -Tpdf .solve_gauss.omp_outlined.dot -o solve_gauss_omp.pdf && \
+	dot -Tpdf .solve_gauss.omp_outlined.dot -o solve_gauss_outlined.pdf && \
 	dot -Tpdf ..omp_task_entry..dot -o omp_task_entry.pdf && \
-	dot -Tpdf .solve.omp_outlined.dot -o solve_omp_outlined.pdf
+	dot -Tpdf .main.dot -o main.pdf \
+
+
+
