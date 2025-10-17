@@ -82,25 +82,29 @@ double solve(double *u, double *unew, unsigned sizex, unsigned sizey) {
   return sum;
 }
 
+#include <stdio.h>
 // 2D-blocked solver: one iteration step
 double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
   double tmp, diff, sum = 0.0;
 
   int nblocksi = sizex / omp_get_max_threads();
   int nblocksj = sizey / omp_get_max_threads();
+  // printf("Using %d x %d blocks\n", nblocksi, nblocksj);
+  // printf("Scheduling with %d threads\n", omp_get_max_threads());
+  // printf("schedule static, %d\n", 1);
 
   #pragma omp parallel
   {
-    #pragma omp for ordered(2) private(tmp, diff) reduction(+ : sum) schedule(static, nblocksj)
+    #pragma omp for ordered(2) private(tmp, diff) reduction(+ : sum) /* schedule(static, 1) */
     for (int blocki = 0; blocki < nblocksi; ++blocki) {
-      int i_start = lowerb(blocki, nblocksi, sizex);
-      int i_end = upperb(blocki, nblocksi, sizex);
       for (int blockj = 0; blockj < nblocksj; ++blockj) {
-        int j_start = lowerb(blockj, nblocksj, sizey);
-        int j_end = upperb(blockj, nblocksj, sizey);
         #pragma omp ordered depend(sink: blocki-1, blockj) depend(sink: blocki, blockj-1)
         {
-          double sum_tmp = 0;
+          int i_start = lowerb(blocki, nblocksi, sizex);
+          int i_end = upperb(blocki, nblocksi, sizex);
+          int j_start = lowerb(blockj, nblocksj, sizey);
+          int j_end = upperb(blockj, nblocksj, sizey);
+          // printf("Thread %d processing block (%d, %d)\n", omp_get_thread_num(), blocki, blockj);
           for (int i = max(1, i_start); i <= min(sizex - 2, i_end); i++) {
             for (int j = max(1, j_start); j <= min(sizey - 2, j_end); j++) {
               tmp = 0.25 * (u[i * sizey + (j - 1)] + // left
@@ -108,12 +112,11 @@ double solve_gauss(double *u, const unsigned sizex, const unsigned sizey) {
                           u[(i - 1) * sizey + j] + // top
                           u[(i + 1) * sizey + j]); // bottom
               diff = tmp - u[i * sizey + j];
-              sum_tmp += diff * diff;
+              sum += diff * diff;
               u[i * sizey + j] = tmp;
             }
           }
           #pragma omp ordered depend(source)
-          sum += sum_tmp;
         }
       }
     }
